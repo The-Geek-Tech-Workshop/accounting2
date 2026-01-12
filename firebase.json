@@ -30,6 +30,13 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/starling/feeditem",
+        "function": "starlingFeedItem",
+        "region": "europe-west2"
+      }
     ]
   },
   "emulators": {
