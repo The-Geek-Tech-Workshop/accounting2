@@ -1,9 +1,10 @@
 {
+  "$schema": "https://raw.githubusercontent.com/firebase/firebase-tools/master/schema/firebase-config.json",
   "firestore": {
     "database": "(default)",
     "location": "europe-west2",
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
+    "rules": ".firebase_config/firestore.rules",
+    "indexes": ".firebase_config/firestore.indexes.json"
   },
   "functions": [
     {
