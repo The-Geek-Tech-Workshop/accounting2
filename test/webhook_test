@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# Define the payload
+PAYLOAD='{
+  "webhookEventUid": "11221122-1122-1122-1122-112211221122",
+  "eventTimestamp": "2020-05-08T12:34:21Z",
+  "accountHolderUid": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa",
+  "content": {
+    "feedItemUid": "11221122-1122-1122-1122-112211221122",
+    "categoryUid": "ccddccdd-ccdd-ccdd-ccdd-ccddccddccdd",
+    "accountUid": "ccddccdd-ccdd-ccdd-ccdd-ccddccddccdd",
+    "amount": {
+      "currency": "GBP",
+      "minorUnits": 123456
+    },
+    "sourceAmount": {
+      "currency": "GBP",
+      "minorUnits": 123456
+    },
+    "direction": "IN",
+    "updatedAt": "2026-01-12T13:49:42.741Z",
+    "transactionTime": "2026-01-12T13:49:42.741Z",
+    "settlementTime": "2026-01-12T13:49:42.741Z",
+    "source": "MASTER_CARD",
+    "sourceSubType": "CONTACTLESS",
+    "status": "PENDING",
+    "transactingApplicationUserUid": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa",
+    "counterPartyType": "MERCHANT",
+    "counterPartyUid": "68e16af4-c2c3-413b-bf93-1056b90097fa",
+    "counterPartyName": "Tesco",
+    "counterPartySubEntityUid": "35d46207-d90e-483c-a40a-128cc4da4bee",
+    "counterPartySubEntityName": "Tesco Southampton",
+    "counterPartySubEntityIdentifier": "608371",
+    "counterPartySubEntitySubIdentifier": "01234567",
+    "exchangeRate": 1.25,
+    "totalFeeAmount": {
+      "currency": "GBP",
+      "minorUnits": 123456
+    },
+    "reference": "TESCO-STORES-6148 SOUTHAMPTON GBR",
+    "country": "GB",
+    "spendingCategory": "GROCERIES",
+    "userNote": "Tax deductable, submit me to payroll",
+    "roundUp": {
+      "goalCategoryUid": "68e16af4-c2c3-413b-bf93-1056b90097fa",
+      "amount": {
+        "currency": "GBP",
+        "minorUnits": 123456
+      }
+    },
+    "hasAttachment": true,
+    "receiptPresent": false,
+    "feedItemFailureReason": "AGE_RESTRICTED_MERCHANT_DISABLED",
+    "masterCardFeedDetails": {
+      "merchantIdentifier": "string",
+      "mcc": 0,
+      "posTimestamp": {
+        "hour": 0,
+        "minute": 0,
+        "second": 0,
+        "nano": 0
+      },
+      "authorisationCode": "string",
+      "cardLast4": "string"
+    },
+    "sourceUid": "ccddccdd-ccdd-ccdd-ccdd-ccddccddccdd"
+  }
+}'
+
+# Generate the signature
+SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha512 -sign test_key.pem | base64 -w 0)
+
+# Call the webhook (adjust URL for your Firebase project)
+curl "http://127.0.0.1:5001/gtw-accounting/europe-west2/starlingWebhook" \
+  -H "Content-Type: application/json" \
+  -H "X-Hook-Signature: $SIGNATURE" \
+  -d "$PAYLOAD" \
+  -v

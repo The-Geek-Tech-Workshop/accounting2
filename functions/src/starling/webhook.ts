@@ -2,6 +2,9 @@ import { createPublicKey, KeyObject, verify } from "crypto";
 import { onRequest, Request } from "firebase-functions/https";
 import { logger, onInit } from "firebase-functions";
 import { defineString } from "firebase-functions/params";
+import { Firestore } from "firebase-admin/firestore";
+
+const firestore = new Firestore();
 
 let PUBLIC_KEY_OBJECT: KeyObject;
 
@@ -19,21 +22,36 @@ const ENCRYPTION_ALGORITHM = "RSA-SHA512";
 
 export const starlingWebhook = onRequest(async (req, res) => {
   const verified = verifyEvent(req);
-  if (verified) {
-    logger.info("Message verified successfully. Dobzre :)");
-  } else {
-    logger.error("Message verification failed");
+
+  if (!verified) {
+    res.status(400).json({
+      error: "Integrity of message signature could not be verified",
+    });
+    return;
   }
 
-  verified
-    ? res.status(202).send()
-    : res.status(400).json({
-        error: "Integrity of message signature could not be verified",
-      });
+  const eventBodyJson = JSON.parse(req.rawBody.toString("utf-8"));
+
+  const eventId = eventBodyJson["webhookEventUid"];
+
+  if (!eventId) {
+    logger.error("Missing webhookEventUid in payload");
+    res.status(400).json({ error: "Missing webhookEventUid in payload" });
+    return;
+  }
+
+  const eventDocument = firestore.doc(`events/starling/feeditem/${eventId}`);
+  await eventDocument.set({
+    body: eventBodyJson,
+    headers: req.headers,
+  });
+
+  res.status(202).send();
+  return;
 });
 
 const verifyEvent = (request: Request) => {
-  const payloadSignatureBase64 = request.headers["X-Hook-Signature"];
+  const payloadSignatureBase64 = request.headers["x-hook-signature"];
   if (!payloadSignatureBase64 || Array.isArray(payloadSignatureBase64)) {
     logger.error("Missing or invalid X-Hook-Signature header");
     return false;
