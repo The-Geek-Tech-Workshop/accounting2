@@ -20,7 +20,7 @@ onInit(() => {
 
 const ENCRYPTION_ALGORITHM = "RSA-SHA512";
 
-export const starlingWebhook = onRequest(async (req, res) => {
+export const starlingFeedItem = onRequest(async (req, res) => {
   const verified = verifyEvent(req);
 
   if (!verified) {
