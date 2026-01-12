@@ -71,7 +71,7 @@ PAYLOAD='{
 SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha512 -sign test_key.pem | base64 -w 0)
 
 # Call the webhook (adjust URL for your Firebase project)
-curl "http://127.0.0.1:5000/starling/feeditem" \
+curl "http://127.0.0.1:5000/api/starling/feeditem" \
   -H "Content-Type: application/json" \
   -H "X-Hook-Signature: $SIGNATURE" \
   -d "$PAYLOAD" \
