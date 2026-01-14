@@ -16,6 +16,7 @@
   "main": "lib/index.js",
   "dependencies": {
     "@google-cloud/firestore": "^8.1.0",
+    "etsy-ts": "^7.2.0",
     "firebase-admin": "^13.6.0",
     "firebase-functions": "^7.0.0"
   },
