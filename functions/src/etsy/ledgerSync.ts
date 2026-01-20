@@ -18,16 +18,21 @@ const etsyApiKey = defineString("ETSY_API_KEY", {
 });
 
 const etsySharedSecret = defineString("ETSY_SHARED_SECRET", {
-  description: "Etsy Shared Secret (required as of Jan 18, 2026)",
+  description: "Etsy Shared Secret",
 });
 
 const etsyShopId = defineString("ETSY_SHOP_ID", {
   description: "Etsy Shop ID",
 });
 
+const etsySyncEnabled = defineString("ETSY_SYNC_ENABLED", {
+  description: "Enable or disable Etsy ledger sync",
+  default: "false",
+});
+
 /**
  * Firestore-backed implementation of SecurityDataStorage for Etsy OAuth tokens
- * Stores tokens by shop ID. The filter.etsyUserId is treated as shop ID.
+ * Stores tokens by shop ID
  */
 class FirestoreSecurityDataStorage implements ISecurityDataStorage {
   private firestore: Firestore;
@@ -40,7 +45,7 @@ class FirestoreSecurityDataStorage implements ISecurityDataStorage {
 
   async storeAccessToken(
     filter: SecurityDataFilter,
-    tokens: Tokens
+    tokens: Tokens,
   ): Promise<void> {
     const docRef = this.firestore.doc(`config/etsy/oauth/${this.shopId}`);
     await docRef.set(
@@ -49,13 +54,13 @@ class FirestoreSecurityDataStorage implements ISecurityDataStorage {
         refreshToken: tokens.refreshToken,
         updatedAt: new Date().toISOString(),
       },
-      { merge: true }
+      { merge: true },
     );
     logger.info(`Stored access token for shop ${this.shopId}`);
   }
 
   async findAccessToken(
-    filter: SecurityDataFilter
+    filter: SecurityDataFilter,
   ): Promise<Tokens | undefined> {
     const docRef = this.firestore.doc(`config/etsy/oauth/${this.shopId}`);
     const doc = await docRef.get();
@@ -82,9 +87,9 @@ class FirestoreSecurityDataStorage implements ISecurityDataStorage {
 
 /**
  * Get the timestamp of the most recent ledger entry from Firestore
- * Returns current time - 30 days if no entries exist
+ * Returns null if no entries exist
  */
-async function getLastSyncTimestamp(): Promise<number> {
+async function getLastSyncTimestamp(): Promise<number | null> {
   try {
     const snapshot = await firestore
       .collection("events/etsy/ledgerentry")
@@ -93,26 +98,23 @@ async function getLastSyncTimestamp(): Promise<number> {
       .get();
 
     if (snapshot.empty) {
-      // No entries exist, default to 30 days ago
-      const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
-      logger.info(`No existing entries found, using default: ${thirtyDaysAgo}`);
-      return thirtyDaysAgo;
+      logger.info("No existing entries found");
+      return null;
     }
 
     const lastEntry = snapshot.docs[0].data();
     const timestamp = lastEntry.body?.created_timestamp;
 
     if (!timestamp) {
-      logger.warn("Last entry missing created_timestamp, using 30 days ago");
-      return Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
+      logger.warn("Last entry missing created_timestamp");
+      return null;
     }
 
     logger.info(`Last sync timestamp: ${timestamp}`);
     return timestamp;
   } catch (error) {
     logger.error("Error getting last sync timestamp:", error);
-    // Fallback to 30 days ago
-    return Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
+    return null;
   }
 }
 
@@ -120,7 +122,7 @@ async function getLastSyncTimestamp(): Promise<number> {
  * Persist a batch of ledger entries to Firestore
  */
 async function persistBatch(
-  entries: IPaymentAccountLedgerEntry[]
+  entries: IPaymentAccountLedgerEntry[],
 ): Promise<number> {
   if (entries.length === 0) {
     return 0;
@@ -160,27 +162,24 @@ async function fetchAndPersistLedgerEntries(
   client: Etsy,
   shopId: number,
   minCreated: number,
-  maxCreated: number
+  maxCreated: number,
 ): Promise<number> {
   const limit = 100;
 
   const processPage = async (
     offset: number,
-    totalPersisted: number
+    totalPersisted: number,
   ): Promise<number> => {
     logger.info(`Fetching ledger entries: offset=${offset}, limit=${limit}`);
 
     const response =
-      await client.LedgerEntry.getShopPaymentAccountLedgerEntries(
-        {
-          shopId,
-          min_created: minCreated,
-          max_created: maxCreated,
-          limit,
-          offset,
-        },
-        { etsyUserId: 0 } // Etsy user ID is not used in this context
-      );
+      await client.LedgerEntry.getShopPaymentAccountLedgerEntries({
+        shopId,
+        min_created: minCreated,
+        max_created: maxCreated,
+        limit,
+        offset,
+      });
 
     const entries = response.data.results || [];
     logger.info(`Received ${entries.length} entries`);
@@ -211,56 +210,73 @@ async function fetchAndPersistLedgerEntries(
 /**
  * Main scheduled function - runs daily at midnight to sync Etsy ledger entries
  */
-export const etsyLedgerSync = onSchedule("every day 00:00", async (event) => {
-  logger.info("Starting Etsy ledger sync");
-
-  try {
-    // 1. Parse configuration
-    const shopIdStr = etsyShopId.value();
-    const shopIdNum = parseInt(shopIdStr, 10);
-
-    if (isNaN(shopIdNum)) {
-      throw new Error("Invalid ETSY_SHOP_ID configuration");
+export const etsyLedgerSync = onSchedule(
+  {
+    schedule: "every day 00:00",
+  },
+  async (event) => {
+    if (etsySyncEnabled.value().toLowerCase() !== "true") {
+      logger.info("Etsy ledger sync is disabled via configuration");
+      return;
     }
 
-    // 2. Initialize Etsy client with shop-based token storage
-    const securityDataStorage = new FirestoreSecurityDataStorage(
-      firestore,
-      shopIdStr
-    );
+    logger.info("Starting Etsy ledger sync");
 
-    const client = new Etsy({
-      apiKey: etsyApiKey.value(),
-      sharedSecret: etsySharedSecret.value(),
-      securityDataStorage,
-      enableTokenRefresh: true,
-    });
+    try {
+      // 1. Parse configuration
+      const shopIdStr = etsyShopId.value();
+      const shopIdNum = parseInt(shopIdStr, 10);
 
-    logger.info(`Using shop ID ${shopIdNum}`);
+      if (isNaN(shopIdNum)) {
+        throw new Error("Invalid ETSY_SHOP_ID configuration");
+      }
 
-    // 3. Get the timestamp of the last synced entry
-    const lastSyncTimestamp = await getLastSyncTimestamp();
+      // 2. Initialize Etsy client with shop-based token storage
+      const securityDataStorage = new FirestoreSecurityDataStorage(
+        firestore,
+        shopIdStr,
+      );
 
-    // 4. Calculate current timestamp
-    const currentTimestamp = Math.floor(Date.now() / 1000);
+      const client = new Etsy({
+        apiKey: etsyApiKey.value(),
+        sharedSecret: etsySharedSecret.value(),
+        securityDataStorage,
+        enableTokenRefresh: true,
+      });
 
-    logger.info(
-      `Syncing entries from ${lastSyncTimestamp} to ${currentTimestamp}`
-    );
+      logger.info(`Using shop ID ${shopIdNum}`);
 
-    // 5. Fetch and persist ledger entries
-    const persistedCount = await fetchAndPersistLedgerEntries(
-      client,
-      shopIdNum,
-      lastSyncTimestamp,
-      currentTimestamp
-    );
+      // 3. Get the timestamp of the last synced entry (assume Epoch if none exists)
+      const lastSyncTimestamp = (await getLastSyncTimestamp()) ?? 0;
 
-    logger.info(
-      `Etsy ledger sync completed: ${persistedCount} entries persisted`
-    );
-  } catch (error) {
-    logger.error("Etsy ledger sync failed:", error);
-    throw error;
-  }
-});
+      logger.info(
+        lastSyncTimestamp === 0
+          ? "Starting sync from Unix epoch (no previous entries)"
+          : `Starting sync from timestamp: ${lastSyncTimestamp}`,
+      );
+
+      // 4. Calculate 'to' timestamp as 30 days after the last sync
+      const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+      const toTimestamp = lastSyncTimestamp + thirtyDaysInSeconds;
+
+      logger.info(
+        `Syncing entries from ${lastSyncTimestamp} to ${toTimestamp}`,
+      );
+
+      // 5. Fetch and persist ledger entries
+      const persistedCount = await fetchAndPersistLedgerEntries(
+        client,
+        shopIdNum,
+        lastSyncTimestamp,
+        toTimestamp,
+      );
+
+      logger.info(
+        `Etsy ledger sync completed: ${persistedCount} entries persisted`,
+      );
+    } catch (error) {
+      logger.error("Etsy ledger sync failed:", error);
+      throw error;
+    }
+  },
+);
