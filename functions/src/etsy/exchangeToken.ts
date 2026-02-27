@@ -19,6 +19,13 @@ interface EtsyTokenResponse {
 }
 
 export const etsyExchangeToken = onCall<ExchangeTokenData>(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be logged in to exchange an Etsy token",
+    );
+  }
+
   const { code, codeVerifier, keystring, sharedSecret, redirectUri } =
     request.data;
 

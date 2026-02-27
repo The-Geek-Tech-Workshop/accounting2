@@ -3,7 +3,7 @@ import {
   getFirestore,
 } from "firebase/firestore/lite";
 import app from "./app";
-import config from "./config";
+import config from "../config";
 
 const firestore = getFirestore(app);
 
