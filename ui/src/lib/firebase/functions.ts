@@ -1,6 +1,6 @@
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 import app from "./app";
-import config from "./config";
+import config from "../config";
 
 const functions = getFunctions(app, "europe-west2");
 

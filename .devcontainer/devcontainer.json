@@ -21,7 +21,7 @@
     }
   },
 
-  "forwardPorts": [4000, 5000, 5001, 8080, 9150],
+  "forwardPorts": [4000, 5000, 5001, 8080, 9150, 9099],
 
   "customizations": {
     "vscode": {
