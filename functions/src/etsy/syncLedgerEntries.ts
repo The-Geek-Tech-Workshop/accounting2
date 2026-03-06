@@ -3,6 +3,7 @@ import { Firestore } from "firebase-admin/firestore";
 import { fetchLedgerEntriesPage } from "../lib/etsy/api";
 import { getValidConfig } from "../lib/etsy/auth";
 import { EtsyLedgerEntryRaw, EtsyConfig } from "../lib/etsy/api_types";
+import { onSchedule } from "firebase-functions/scheduler";
 
 const firestore = new Firestore();
 
@@ -45,12 +46,7 @@ const fetchAndStoreLedgerEntries = async (
   return go(0);
 };
 
-interface DateRange {
-  readonly minCreated: number;
-  readonly maxCreated: number;
-}
-
-const parseDateRange = (date: string): DateRange => {
+const parseDate = (date: string): Date => {
   const parsedDate = new Date(date);
 
   if (!date || isNaN(parsedDate.getTime())) {
@@ -59,15 +55,28 @@ const parseDateRange = (date: string): DateRange => {
       "A valid ISO formatted date is required (e.g. 2026-03-04).",
     );
   }
+  return parsedDate;
+};
 
-  const year = parsedDate.getUTCFullYear();
-  const month = parsedDate.getUTCMonth();
-  const day = parsedDate.getUTCDate();
+const syncEtsyLedgerEntriesForDate = async (date: Date): Promise<number> => {
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
 
-  return {
+  const { minCreated, maxCreated } = {
     minCreated: Math.floor(Date.UTC(year, month, day, 0, 0, 0, 0) / 1000),
     maxCreated: Math.floor(Date.UTC(year, month, day, 23, 59, 59, 999) / 1000),
   };
+
+  const config = await getValidConfig();
+
+  const count = await fetchAndStoreLedgerEntries(
+    config,
+    minCreated,
+    maxCreated,
+  );
+
+  return count;
 };
 
 export const etsySyncLedgerEntries = onCall<SyncLedgerEntriesData>(
@@ -80,17 +89,13 @@ export const etsySyncLedgerEntries = onCall<SyncLedgerEntriesData>(
     }
 
     const { date } = request.data;
-
-    const { minCreated, maxCreated } = parseDateRange(date);
-
-    const config = await getValidConfig();
-
-    const count = await fetchAndStoreLedgerEntries(
-      config,
-      minCreated,
-      maxCreated,
-    );
-
-    return { success: true, count, date };
+    const parsedDate = parseDate(date);
+    const count = await syncEtsyLedgerEntriesForDate(parsedDate);
+    return { success: true, count };
   },
 );
+
+// Runs daily at 1:00 AM UTC to sync the previous day's ledger entries
+export const dailyEtsyLedgerSync = onSchedule("0 1 * * *", async (event) => {
+  await syncEtsyLedgerEntriesForDate(new Date(event.scheduleTime));
+});
