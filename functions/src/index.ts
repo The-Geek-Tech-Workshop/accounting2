@@ -26,3 +26,6 @@ setGlobalOptions({ maxInstances: 10, region: "europe-west2" });
 
 export * from "./starling/webhook";
 export * from "./etsy/exchangeToken";
+export * from "./etsy/ledgerEntries";
+export * from "./etsy/syncLedgerEntries";
+export * from "./etsy/deleteConfig";
