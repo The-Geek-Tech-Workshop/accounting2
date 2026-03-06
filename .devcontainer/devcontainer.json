@@ -1,14 +1,7 @@
 {
   "name": "GTW Accounting Dev",
-  "image": "debian:trixie-slim",
+  "image": "mcr.microsoft.com/devcontainers/base:trixie",
   "features": {
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": false,
-      "configureZshAsDefaultShell": false,
-      "installOhMyZsh": false,
-      "installOhMyZshConfig": false,
-      "username": "developer"
-    },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "24",
       "nodeGypDependencies": false
@@ -25,7 +18,7 @@
 
   "customizations": {
     "vscode": {
-      "extensions": ["esbenp.prettier-vscode"],
+      "extensions": ["esbenp.prettier-vscode", "-vscjava.vscode-java-pack"],
       "settings": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.formatOnSave": true,
@@ -35,7 +28,5 @@
         }
       }
     }
-  },
-
-  "remoteUser": "developer"
+  }
 }

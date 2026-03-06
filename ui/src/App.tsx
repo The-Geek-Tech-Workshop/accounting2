@@ -16,7 +16,7 @@ function App() {
         <AccountingMenu />
       </Sider>
       <Layout>
-        <Content>
+        <Content style={{ overflow: "scroll" }}>
           <AccountingRouter />
         </Content>
       </Layout>
