@@ -64,3 +64,5 @@ build/Release
 
 # dataconnect generated files
 .dataconnect
+
+node_modules/

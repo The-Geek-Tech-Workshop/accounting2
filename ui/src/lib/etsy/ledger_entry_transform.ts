@@ -2,16 +2,12 @@ import type {
   EtsyLedgerEntry,
   EtsyLedgerType,
   EtsyLedgerEntryReferenceType,
-} from "../../model/etsy/ledger_entry";
-import type {
   EtsyPaymentAdjustment,
   EtsyPaymentAdjustmentItem,
-} from "../../model/etsy/payment_adjustment";
-import type {
   EtsyLedgerEntryRaw,
   EtsyPaymentAdjustmentRaw,
   EtsyPaymentAdjustmentItemRaw,
-} from "../../../../functions/src/lib/etsy/api_types";
+} from "@accounting2/shared";
 
 const transformPaymentAdjustmentItem = (
   raw: EtsyPaymentAdjustmentItemRaw,

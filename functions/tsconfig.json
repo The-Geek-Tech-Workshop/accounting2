@@ -8,10 +8,13 @@
     "outDir": "lib",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017"
+    "target": "es2017",
+    "baseUrl": ".",
+    "paths": {
+      "@accounting2/shared": ["../packages/shared/src/index.ts"],
+      "@accounting2/shared/*": ["../packages/shared/src/*.ts"]
+    }
   },
   "compileOnSave": true,
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

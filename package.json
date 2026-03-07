@@ -1,0 +1,9 @@
+{
+    "name": "accounting2",
+    "private": true,
+    "workspaces": [
+        "functions",
+        "ui",
+        "packages/shared"
+    ]
+}

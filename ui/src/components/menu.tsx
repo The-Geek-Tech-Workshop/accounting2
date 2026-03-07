@@ -15,6 +15,13 @@ const AccountingMenu = () => {
           },
         },
         {
+          label: "Accounts",
+          key: "accounts",
+          onClick: () => {
+            navigate("/accounts");
+          },
+        },
+        {
           label: "Integrations",
           key: "integrations",
           children: [

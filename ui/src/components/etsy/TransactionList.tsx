@@ -1,5 +1,9 @@
-import { Table, type TableProps } from "antd";
-import { fetchEtsyLedgerEntries } from "../../lib/apis/etsy";
+import { useState } from "react";
+import { Button, message, Table, type TableProps } from "antd";
+import {
+  fetchEtsyLedgerEntries,
+  reprocessEtsyLedgerEntries,
+} from "../../lib/apis/etsy";
 import { useQuery } from "@tanstack/react-query";
 import type { EtsyLedgerEntry } from "../../model/etsy/ledger_entry";
 import testData from "./TransactionList.testdata";
@@ -76,12 +80,33 @@ const columns: TableProps<EtsyLedgerEntry>["columns"] = [
 ];
 
 const TransactionList = () => {
+  const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
+
   const { isPending, isError, data, error } = useQuery({
     queryKey: ["etsyLedgerEntries"],
     queryFn: useTestData
       ? () => Promise.resolve(testData)
       : fetchEtsyLedgerEntries,
   });
+
+  const handleProcessSelected = async () => {
+    setIsProcessing(true);
+    try {
+      await reprocessEtsyLedgerEntries(selectedEntryIds);
+      messageApi.success(
+        `${selectedEntryIds.length} entr${selectedEntryIds.length === 1 ? "y" : "ies"} submitted for processing.`,
+      );
+      setSelectedEntryIds([]);
+    } catch (err) {
+      messageApi.error(
+        `Failed to submit entries: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   if (isPending) {
     return <div>Loading transactions...</div>;
@@ -92,11 +117,29 @@ const TransactionList = () => {
   }
 
   return (
-    <Table<EtsyLedgerEntry>
-      columns={columns}
-      dataSource={data}
-      scroll={{ y: "calc(100vh - 250px)" }}
-    />
+    <>
+      {contextHolder}
+      <div style={{ marginBottom: 8 }}>
+        <Button
+          type="primary"
+          disabled={selectedEntryIds.length === 0}
+          loading={isProcessing}
+          onClick={handleProcessSelected}
+        >
+          Process as Accounts ({selectedEntryIds.length})
+        </Button>
+      </div>
+      <Table<EtsyLedgerEntry>
+        columns={columns}
+        dataSource={data}
+        rowKey="entryId"
+        rowSelection={{
+          selectedRowKeys: selectedEntryIds,
+          onChange: (keys) => setSelectedEntryIds(keys as string[]),
+        }}
+        scroll={{ y: "calc(100vh - 300px)" }}
+      />
+    </>
   );
 };
 
