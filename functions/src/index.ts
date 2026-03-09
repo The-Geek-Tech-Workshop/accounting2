@@ -31,3 +31,4 @@ export * from "./etsy/reprocessLedgerEntries";
 export * from "./etsy/publishLedgerEvent";
 export * from "./etsy/processLedgerEvent";
 export * from "./etsy/deleteConfig";
+export * from "./ebay/exchangeToken";

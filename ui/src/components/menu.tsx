@@ -32,6 +32,13 @@ const AccountingMenu = () => {
                 navigate("/integrations/etsy");
               },
             },
+            {
+              label: "eBay",
+              key: "ebay",
+              onClick: () => {
+                navigate("/integrations/ebay");
+              },
+            },
           ],
         },
       ]}

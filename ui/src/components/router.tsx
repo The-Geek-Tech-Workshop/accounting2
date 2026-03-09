@@ -5,6 +5,8 @@ import DashboardPage from "../pages/dashboard";
 import LoginPage from "../pages/login";
 import AccountsPage from "../pages/accounts";
 import RequireAuth from "./RequireAuth";
+import EbayIntegrationPage from "../pages/ebay_integration";
+import EbayCallbackPage from "../pages/ebay_callback";
 
 const AccountingRouter = () => {
   return (
@@ -15,6 +17,8 @@ const AccountingRouter = () => {
         <Route path="/accounts" element={<AccountsPage />} />
         <Route path="/integrations/etsy" element={<EtsyIntegrationPage />} />
         <Route path="/etsy/connect/callback" element={<EtsyCallbackPage />} />
+        <Route path="/integrations/ebay" element={<EbayIntegrationPage />} />
+        <Route path="/ebay/connect/callback" element={<EbayCallbackPage />} />
       </Route>
     </Routes>
   );
