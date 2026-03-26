@@ -26,4 +26,12 @@ exports.Accounts = {
         name: "Etsy Clearing",
         type: "Asset",
     },
+    eBay: {
+        name: "eBay",
+        type: "Asset",
+    },
+    eBayClearing: {
+        name: "eBay Clearing",
+        type: "Asset",
+    },
 };

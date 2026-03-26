@@ -5,7 +5,11 @@ interface Account {
   readonly type: AccountType;
 }
 
-type SourceType = "EtsyLedgerEntry" | "Other";
+type SourceType =
+  | "EtsyLedgerEntry"
+  | "EbayTransaction"
+  | "EbayPayout"
+  | "Other";
 
 interface DoubleEntry {
   readonly timestamp: number;

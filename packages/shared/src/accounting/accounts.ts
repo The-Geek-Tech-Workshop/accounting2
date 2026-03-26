@@ -27,4 +27,14 @@ export const Accounts = {
     name: "Etsy Clearing",
     type: "Asset",
   } as Account,
+
+  eBay: {
+    name: "eBay",
+    type: "Asset",
+  } as Account,
+
+  eBayClearing: {
+    name: "eBay Clearing",
+    type: "Asset",
+  } as Account,
 };
